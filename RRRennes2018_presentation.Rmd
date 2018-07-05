@@ -23,7 +23,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Qui sommes-nous?
 
-- Enseignants, y compris biostatistiques et science des données (voir http://biodatascience-course.sciviews.org)
+- Enseignants, y compris biostatistiques et science des données\
+(voir http://biodatascience-course.sciviews.org)
 
 ![](figures/bdd-umons1.png)
 
@@ -533,7 +534,7 @@ foo(urchin, x_ = weight)
 
 - `flow()` est juste remplacé par `flow_function()`
 
-- Passage à une fonction véritable **beaucoup plus facile et intuitive** à partir de `flow_function()` (conversion automatisée même possible) !
+- Passage à une fonction véritable **beaucoup plus facile et intuitif** à partir de `flow_function()` (conversion automatisée même possible) !
 
 
 ### A retenir...
