@@ -1,23 +1,46 @@
 ---
-title: "Rencontres R - Rennes 2018 - Essais"
+title: "Rencontres R - Rennes 2018 - `chart` et `flow` mini-tutorial"
 output: html_notebook
 ---
 
+Version commentée et augmentée de RRennes2018_presentation.Rmd.
+
+
+## Installation
+
+La versions en développement sur Github de ces fonctions est nécessaire :
+
 ```{r}
+#install.packages("devtools")
+##install.packages(c("tidyverse", "latticeExtra", "cowplot",
+#  "pryr", "ggpubr", "ggplotify", "svMisc", "proto", "tsibble",
+#  "Hmisc", "nycflights13"))
+#devtools::install_github("SciViews/data")
+#devtools::install_github("SciViews/chart")
+#devtools::install_github("SciViews/flow")
+#
+#library(tidyverse)
+#library(data)
+#library(chart)
+#library(flow)
+#
+#ou plus simplement, lorsque la prichaine version SciViews sera sur CRAN :
+#install.packages("Sciviews")
 SciViews::R
 ```
 
+Nous utiliserons le jeu de données `urchin_bio` du package `data`, avec annotation (`label` et `units`) en français. Cela se fait avec la fonction `read()` du package `data` :
 
-## Jeu de données exemple
+```{r}
+urchin <- data::read("urchin_bio", package = "data", lang = "FR")
+```
 
-Puisqu'on va parler de **data**, autant utiliser un jeu de données original qu'il propose.
-
-- **urchin_bio** est bien pour faire une régression, avec la comparison pêche - aquaculture
+Ce jeu de données contient diverses mesures de biométrie sur deux populations d'oursins : ceux provenant d'élevage ("Culture") et ceux provenant du milieu naturel ("Pêcherie").
 
 
-## Enseigner des patterns (+ snippets)
+## Pourquoi utiliser `read()` à la place de `data()` pour charger un package R ?
 
-- difficultés entre `data(<dataset>)` et `<df> <- read.csv("<filepath>", <args>)`
+- Difficultés ches les débutants entre `data(<dataset>)` et `<df> <- read.csv("<filepath>", <args>)` : "patterns" différents.
 
 - dans **data**, pattern similaire:
 
@@ -25,184 +48,258 @@ Puisqu'on va parler de **data**, autant utiliser un jeu de données original qu'
 
 deux cas:
 
-- jeu de données d'un package R: `<df> <- read("<dataset_name>", package = "<pkg>")`
+- jeu de données d'un package R:
 
-- fichier: `<df> <- read("<dataset_file>", <args>)`
+`<df> <- read("<dataset_name>", package = "<pkg>")`
 
+- fichier:
 
-## Régression linéaire avec urchin_bio
+`<df> <- read("<dataset_file>", <args>)`
 
-```{r}
-#read(package = "data")
-#urchin <- read("../data/urchin.csv")
-#urchin <- read("urchin_bio", package = "data")
-urchin <- read("urchin_bio", package = "data", lang = "FR")
-```
+- Possibilité d'annoter les variables (attributs `label` et `units`) dans différentes langues. Cette information sera utilisée par `chart()` plus tard.
 
 ```{r}
-#View(urchin)
-#?urchin
-#.?urchin
+#View(urchin) # Les labels apparaissent dans RStudio
 attributes(urchin$skeleton) # Label et unités enregistrés
 ```
 
-Masse squelettique en fonction de la masse totale?
+
+## Utilisation de `chart`
+
+Masse squelettique des oursins en fonction de la masse totale?
 
 ```{r}
 ggplot(data = urchin, aes(weight, skeleton)) +
   geom_point()
 ```
 
-Patterns: les premiers graphes que les étudiants voient s'impriment dans leur esprit comme les exemples à suivre. ggplot2 produit des graphes très proches d'un idéal, mais:
+Patterns: les premiers graphes que les étudiants voient s'impriment dans leur esprit comme les exemples à suivre. `ggplot2` produit des graphes très proches d'un idéal, mais:
 
 - thème par défaut particulier (fond gris)
-- text un peu petit
 - mauvais libellé des axes et unités manquantes
 
 => Utiliser un autre thème par défaut
 => Prendre en compte le label et les unités enregistrés dans le jeu de données
 
-=> chart(). Remplacement minial de la syntaxe ggplot
+=> chart(). Remplacement mininal de la syntaxe `ggplot()`
 
-(1) ggplot() -> chart()
+**Règle `chart()` #1:** `chart()`peut remplacer `ggplot()` sans changer le reste.
 
 ```{r}
 chart(data = urchin, aes(weight, skeleton)) +
   geom_point()
 ```
 
-## Interface formule
 
-Régression linéaire:
+### Interface formule
+
+Effectuons une régression linéaire :
 
 ```{r}
-(urchin_lm <- lm(data = urchin, skeleton ~ weight))
+(lmod <- lm(data = urchin, skeleton ~ weight))
 ```
 
 Patterns différents avec position des variables x et y inversées:
 
-`aes(<x>, <y>)` versus `<y> ~ <x>` => Source de confusion et d'erreur!
+`aes(<x>, <y>)` _versus_ `<y> ~ <x>` => source de confusion et d'erreur!
 
-Utilisation des formules avec ggplot2, modifs minimales: `f_aes()` à la place de `aes()`:
+**Règle `chart()` #2 :** `f_aes()` à la place de `aes()`, permettant de spécifier les "aesthetics" via des formules.
 
 ```{r}
 ggplot(data = urchin, f_aes(skeleton ~ weight)) +
   geom_point()
 ```
 
-avec `chart()` à la place de `ggplot()`, plus besoin de préciser `f_aes()`!
+Combiné avec la règle #1, `chart()` à la place de `ggplot()`, plus besoin de préciser `f_aes()` !
 
 ```{r}
 chart(data = urchin, skeleton ~ weight) +
   geom_point()
 ```
 
-`chart()` est "subsettable" pour indiquer le type de graphique à réaliser:
+On a donc maintenant exactement le même pattern pour `lm(data = <df>, <formula>)` et `chart(data = <df>, <formula>)`. Plus facile pour les débutants.
+
+
+### Versions différentes de graphiques
+
+**Règle `chart` #3 :** `chart()` est "subsettable" pour indiquer le type de graphique à réaliser : `chart$<type>`()
 
 ```{r}
 chart$geom_point(data = urchin, skeleton ~ weight)
 ```
 
-Il prend en compte également les graphiques lattices. Notez la similitude:
+Il prend en compte également les graphiques `lattice`s ou de base. Notez la similitude.
 
 ```{r}
 chart$xyplot(data = urchin, skeleton ~ weight)
 ```
 
-Travail en cours: prise en compte automatique des labels et du thème, similaire à celui pour ggplot2.
+**Travail en cours :** prise en compte automatique des labels et du thème, similaire à celui pour `ggplot2`.
 
-Paramètres additionnels, couleur en fonction de l'origine:
+
+### Paramètres additionnels directement dans les formules
+
+Exemple, couleur en fonction de l'origine.
 
 ```{r}
 chart$geom_point(data = urchin, f_aes(skeleton ~ weight, col = origin))
 ```
 
-
-mais directement intégrable dans la formule à l'aide de la syntaxe `%<par>=%`:
+**Règle `chart` #4 :** arguments supplémentaires `aes()` directement intégrable dans la formule à l'aide de la syntaxe `%<par>=%`.
 
 ```{r}
 chart$geom_point(data = urchin, skeleton ~ weight %col=% origin)
 ```
 
-La syntaxe `|` est également reconnue:
+La syntaxe `|` est également reconnue pour les "facets" :
 
 ```{r}
 chart$geom_point(data = urchin, skeleton ~ weight | origin)
 ```
 
-... et toujours similaire à lattice:
+... et toujours similaire à lattice :
 
 ```{r}
 chart$xyplot(data = urchin, skeleton ~ weight | origin)
 ```
 
-Il est facile d'ajouter la droite de régression dans son graphique:
+Il est facile d'ajouter la droite de régression dans son graphique :
 
 ```{r}
-p1 <- chart$geom_point(data = urchin, skeleton ~ weight) +
+chart$geom_point(data = urchin, skeleton ~ weight) +
   geom_smooth(method = "lm")
-p1
 ```
 
-Autre source d'erreur: l'incompatibilité complète entre les graphiques de base, lattice et ggplot2. Si l'étudiant effectue une analyse des résidus, il peut faire:
+
+### Compatibilité 
+
+**Autre source d'erreur chez les débutants :** l'incompatibilité complète entre les graphiques de base, `lattice` et `ggplot2`. Si l'étudiant effectue une analyse des résidus, il peut faire :
 
 ```{r}
-par(mfrow = c(2L, 2L))
+par(mfrow = c(1L, 2L))
 plot(urchin_lm, which = 1L)
 plot(urchin_lm, which = 2L)
-plot(urchin_lm, which = 3L)
 ```
 
-Mais s'il veut reprendre le graphe ggplo2 précédent comme 4ème graphique, ce n'est pas possible!
+Mais si il veut reprendre le graphe `ggplot2` et l'associer à ces deux graphiques dans une figure composite, ce n'est pas possible !
 
-Avec `chart()`, tous les graphiques peuvent être agencés ensemble quelle que soit leur nature:
+Avec `chart()`, tous les graphiques peuvent être agencés ensemble quelle que soit leur nature.
 
 ```{r}
-combine_charts(list(
-  # ggplot2
-  chart$geom_point(data = urchin, skeleton ~ weight) +
-    geom_smooth(method = "lm"),
-  # Lattice plot
-  chart$xyplot(data = urchin, skeleton ~ weight | origin,
-    pch = 16, col = "black"),
-  # Base plot
-  chart$plot(urchin_lm, which = 1L,
-    pch = 16, las = 1, cex.axis = 0.8),
-  chart$plot(urchin_lm, which = 2L,
-    pch = 16, las = 1, cex.axis = 0.8)
-))
-
+c# ggplot2
+c1 <- chart$geom_point(data = urchin, skeleton ~ weight) +
+  geom_smooth(method = "lm")
 # Lattice plot
-p2 <- chart$xyplot(data = urchin, skeleton ~ weight | origin, pch = 16, col = "black")
-# Base plot
-p3 <- chart$plot(urchin_lm, which = 1L, pch = 16, las = 1, cex.axis = 0.8)
-p4 <- chart$plot(urchin_lm, which = 2L, pch = 16, las = 1, cex.axis = 0.8)
-ggpubr::ggarrange(p1, p2, p3, p4, labels = "auto")
+c2 <- chart$xyplot(data = urchin, skeleton ~ weight | origin)
+# Base plots
+c3 <- chart$plot(lmod, which = 1L)
+c4 <- chart$plot(lmod, which = 2L)
+
+ggarrange(c1, c2, c3, c4, labels = "AUTO")
 ```
 
 
-## Flow
+## Utilisation de `flow`
 
-Combinaison de briques logicielles avec l'opérateur "pipe"
+Combinaison de briques logicielles avec l'opérateur "pipe". Facilite l'assemblage de briques logicielles pour réaliszr des tâches plus complexes tout en gardant un code lisible.
 
-Pas intuitif, en particuliers pour tous les cas particuliers, lorsque `.` est renvoyé à un autre argument que le premier, ou utilisé dans des sous-expressions!
+Difficultés lorsque l'on veut généraliser le pipeline (à l'intérieur d'une fonction).
 
-**svFlow** proposes l'opérateur `%>.%` qui impose de spécifier **toujours** où placer `.` et qui ne modifie pas l'expression à évaluer (beaucoup plus rapide). Au final, il est beaucoup plus intuitif pour les étudiants (ne pas en parler?)
-
-Difficultés lorsque l'on veut généraliser (à l'intérieur d'une fonction, par exemple):
-
+Partons d'un exemple simple :
 
 ```{r}
 urchin %>%
-  mutate(log_skel = log(skeleton)) %>%
-  summarise(mean = mean(log_skel,
+  mutate(lgsk = log(skeleton)) %>%
+  summarise(mean = mean(lgsk,
     na.rm = TRUE))
 ```
 
-On a trois vairables ici:
-- Une variable standard (la valeur pour `na.rm=`), que l'on nommera `na_rm`
-- Une variable qui contient une expression à passer sous forme d'une `quosure` à débaler à l'intérieur du pipeline (`x`)
-- Une variable qui sert de nom et ensuite est utilisée plus loin dans le pipeline, à passer aussi sous forme de `quosure` (`y`) 
+On a trois arguments qu'on voudrait pouvoir modifier pour généraliser ce pipeline (du plus facile au plus complexe) :
+
+- Un argument qui demande une constante `TRUE`/`FALSE` (la valeur pour `na.rm=`), que l'on nommera `na_rm` et qui ne nécessite pas de passer par une `quosure`.
+
+- Une variable qui contient une expression à passer sous forme d'une `quosure` à débaler à l'intérieur du pipeline dans l'expression non standard prise par la fonction `mutate()` (qu'on nommera `x`)
+
+- Une variable qui sert de nom dans `mutate()` et ensuite est utilisée plus loin dans le pipeline, à passer aussi sous forme de `quosure` dans une autre expression non standard dans `summarise()` (qu'on nommera `y`) 
+
+Nous allons effectuer ces rempl  acement successivement à l'aide de `tidyverse` d'abord, et ensuite, en utilisant `flow`.
+
+
+### Variable ne nécessitant pas de `quosure`
+
+Dans `tidyverse` :
+
+```{r}
+na_rm <- TRUE
+urchin %>%
+  mutate(lgsk = log(skeleton)) %>%
+  summarise(mean = mean(lgsk,
+    na.rm = !!na_rm))
+```
+
+On notera deux choses :
+
+- Il n'y a aucune place dans le pipeline pour la variable `na_rm`. Donc, on doit la stocker ailleurs (ici, dans notre environnement global). C'est pas idéal.
+
+- Pour injecter sa valeur dans l'expression non standard, argument de `summarise()`, il faut utiliser l'opérateur préfixe "lazyeval" `!!` (prononcez "bang bang") devant notre variable `na_rm`.
+
+
+#### Variable dans `flow`
+
+Nous allons modifier légèrement le pipeline pour créer et ensuite transmettre d'une étape à l'autre les données dans un objet appelé `flow`. Dans cet objet, on peut rajouter des variables satellites. La modification nécessite :
+
+- d'utiliser la fonction `flow()` qui prend un premier argument avec les données à traiter, et éventuellement autant d'autres variables que vous voulez,
+
+- de remplacer l'opérateur de pipe `%>%` de `magrittr` (`tidyverse`) par `%>_%` du package `flow`. Ce dernier opérateur est capable de gérer les particularités de l'objet `flow` au travers du pipeline,
+
+- de terminer le pipeline par `%>_% .` qui va permettre d'extraire le résultat final (sinon, on se retrouve avec le dernier objet `flow` qui contient ce résultat final).
+
+- ... et bien sûr, on rajoute ici la variable `na_rm` :
+
+```{r}
+flow(urchin, na_rm = TRUE) %>_%
+  mutate(., lgsk = log(skeleton)) %>_%
+  summarise(., mean = mean(lgsk,
+    na.rm = na_rm_)) %>_% .
+```
+
+Les plus attentifs auront noté une autre différence. Au lieu de `!!na_rm` dans l'expression non standard dans `summarise()`, on a utilisé `na_rm_`. Donc, l'opérateur `!!` de "tidyeval" est remplacé par un **"opérateur" suffixé** `_` derrière la variable `na_rm`. Opérateur est entre guillement, car syntactiquement parlant, ce n'en est pas une, mais il se comportera comme tel. Son rôle est de :
+
+1) extraire l'objet associé au nom `na_rm` depuis l'objet `flow`, et
+
+2) l'injecter dans l'expression non standard donnée à `summarise()` (mécanisme "tidyeval").
+
+
+### Variable nécessitant une `quosure`
+
+Revenons à notre pipeline `tidyverse` où on veut créer la variable `x` qui spécifie la variable du tableau à traiter (`skeleton` ou autre). En `tidyverse`, on écrira :
+
+```{r}
+x <- quo(skeleton)
+na_rm <- TRUE
+urchin %>%
+  mutate(lgsk = log(!!x)) %>%
+  summarise(mean = mean(lgsk,
+    na.rm = !!na_rm))
+```
+
+Par rapport au cas précédent, nous devons créer explicitement une `quosure`, à l'aide de `quo()` ou `enquo()`. Pour le reste, le travail est le même.
+
+
+#### Variable avec `quosure` dans `flow`
+
+```{r}
+flow(urchin,
+  x_ = skeleton,
+  na_rm = TRUE) %>_%
+  mutate(., lgsk = log(x_)) %>_%
+  summarise(., mean = mean(lgsk,
+    na.rm = na_rm_)) %>_% .
+```
+
+Dans `flow`, l'opérateur suffixe `_` est utilisable également à l'assignation pour indiquer qu'on veut utiliser une expression à évaluer de manière non standard. Dans ce cas, `flow` créera la `quosure` de manière totalement transparente et fera le `unquote`ing dans l'expression non standard fournie à `mutate()`.
+
+
 
 ```{r}
 flow(urchin,
@@ -230,209 +327,3 @@ urchin %>%
 ```
 
 
-## Autre essai sur zooplankton
-
-- zooplankton est bien pour, par exemple, corrplot, et pour une classification supervisée
-
-```{r}
-zoo <- read("zooplankton", package = "data", lang = "FR")
-skimr::skim(zoo)
-```
-
-```{r}
-# Labels
-View(zoo)
-# Help page, despite name was changed!
-?zoo
-.?zoo
-```
-
-
-Correlation plot de toutes les variables numériques:
-
-```{r}
-zoo %>.%
-  select_if(., is.numeric) %>.%
-  cor(., use = "complete.obs") %>.%
-  corrplot::corrplot(., method = "ellipse")
-```
-
-
-Choisissons deux variables et 3 classes pour illustrer nos propos:
-
-- la taille (size), et la circularité (quantifie si la particule est ronde circ = 1 ou pas circ << 1)
-
-```{r}
-chart$auto(zoo, circularity ~ size %col=% class)
-# Better to use log-transformed size
-chart$auto(zoo, circularity ~ log10(size) %col=% class)
-```
-
-
-- classes Chaetognathe, Cladocère & Protiste
-
-```{r}
-zoo3 <-
-  zoo %>.%
-  filter(., class %in% c("Chaetognathe", "Gastéropode", "Poisson")) %>.%
-  mutate(., class = droplevels(class))
-table(zoo3$class)
-```
-
-```{r}
-chart$auto(zoo3, circularity ~ size %col=% class)
-```
-
-# Linear discriminant analysis:
-
-```{r}
-lda_zoo3 <- lda(data = zoo3, class ~ size + circularity, CV = TRUE)
-table(zoo3$class, lda_zoo3$class)
-```
-
-
-Visualize lda:
-
-```{r}
-lda_zoo3 <- lda(data = zoo3, class ~ size + circularity)
-klaR::drawparti(zoo3$class, zoo3$size, zoo3$circularity, method = "lda", image.colors = scales::hue_pal()(3), gs = as.integer(zoo3$class) + 15, print.err = FALSE, cex.mean = 0)
-```
-
-This used to work,... but does not work any more!
-
-```{r}
-zoo3 %>.%
-  #mutate(., log_size = log10(size)) %>.%
-  select(., class, size, circularity) %>.%
-  mutate(., size = as.numeric(size), circularity = as.numeric(circularity), class = as.factor(class)) %>.%
-  as.data.frame(.) %>.%
-  mlr::makeClassifTask(data = ., target = "class") %>.%
-  mlr::plotLearnerPrediction(task = ., learner = "classif.lda")
-```
-
-
-## Patterns avec formules
-
-- mélange formules et autres source d'erreur: x et y sont dans un ordre différent!
-Montrer avec ggplot2 vs lm()
-
-`<goal>("<y> ~ <x>, data = <df>")`
-
-mais non pipe-friendly. Pas nécessaire de changer les fonctions comme lm() avec
-ce pattern-ci:
-
-`<goal>(<df>, formula = <y> ~ <x>)`
-
-```{r}
-zoo %>% lm(formula = ecd ~ size)
-#or
-library(flow)
-zoo %>.% lm(., formula = ecd ~ size)
-```
-
-Mais problème avec les fonctions lattice, car j'ai histogram(x, data). Donc, le
-pattern suivant fonctionne mieux:
-
-`<goal>(data = ., <y> ~ <x>)`
-
-
-```{r}
-library(tidyverse)
-zoo %>% lm(data = ., ecd ~ size)
-#or
-library(flow)
-zoo %>.% lm(data = ., ecd ~ size)
-```
-
-```{r}
-ggplot(zoo, aes(size, ecd, col = class)) +
-  geom_point() +
-  facet_wrap(~class)
-```
-
-Chart equivalent
-
-```{r}
-library(chart)
-# if using f_aes() for facets, need to indicate with.facets = TRUE
-chart(zoo, f_aes(ecd ~ size %col=% class | class, with.facets = TRUE)) +
-  geom_point()
-# With chart() directly, no need of this!
-chart(zoo, ecd ~ size %col=% class | class) +
-  geom_point()
-chart(data = zoo, ecd ~ size %col=% class | class) +
-  geom_point()
-chart$auto(data = zoo, ecd ~ size %col=% class | class)
-```
-
-avec ggformula:
-
-```{r}
-library(ggformula)
-gf_point(ecd ~ size | class, data = zoo, col = ~class)
-```
-
-- Les 3 règles (simples) pour passer de ggplot2 à chart:
-
-- ...
-
-
-## Comparison of tidyverse versus SciViews::R:
-
-Different... but close enough, with just a few simple rules to remember if you switch from tidyverse to SciViews::R.
-
-
-```{r}
-# Traditional (tidyverse) way:
-iris %>%
-  ggplot(aes(Petal.Length, Sepal.Length, col = Species)) +
-  geom_point() +
-  facet_wrap(~Species)
-
-# SciViews::R way (tidyverse flavor)
-iris %>.%
-  chart(., Sepal.Length ~ Petal.Length, col = Species) +
-  geom_point() +
-  facet_wrap(~Species)
-
-# SciViews::R way (formula-centric flavor)
-iris %>.%
-  chart(., Sepal.Length ~ Petal.Length | Species, col = Species) +
-  geom_point()
-```
-
-
-```{r}
-library(grid)
-library(ggpubr)
-
-# Need to convert trellis objects into grob for ggarrange()!
-lattice_to_grob <- function(p, ...)
-  grob(p = p, ..., cl = "lattice") 
-lp <- xyplot(mpg ~ hp | factor(cyl), data = mtcars)
-glp <- lattice_to_grob(lp)
-
-p1 <- chart$auto(zoo3, circularity ~ log10(size) %col=% class) +
-  xlab("Log(taille [mm])")
-
-p2 <- chart$cloud(data = zoo3, circularity ~ log10(size) * transparency, col = zoo3$class,
-  xlab = "Log(taille [mm])", ylab = "Circularité", zlab = "Transparence",
-  par.settings = theme_sciviews_lattice()$lattice_par,
-  lattice.options = theme_sciviews_lattice()$lattice_opt)
-
-p3 <- chart$base(zoo %>.%
-  select_if(., is.numeric) %>.%
-  cor(., use = "complete.obs") %>.%
-  ellipse::plotcorr(., method = "ellipse"))
-
-p3 <- chart$base(zoo %>.%
-  select_if(., is.numeric) %>.%
-  cor(., use = "complete.obs") %>.%
-  corrplot::corrplot(., method = "ellipse"))
-
-p4 <- chart$base(klaR::drawparti(zoo3$class, zoo3$size, zoo3$circularity,
-  method = "lda", image.colors = scales::hue_pal()(3), gs = as.integer(zoo3$class) + 15,
-  print.err = FALSE, cex.mean = 0, xlab = "Log(taille [mmm])", ylab = "Circularité"))
-  
-ggpubr::ggarrange(p1, p2, p3, p4, labels = "AUTO")
-```
