@@ -16,17 +16,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Qui sommes-nous?
 
 - Biologistes marins (coraux, plancton) à l'Université de Mons en Belgique.
+- Développeurs en R (mainteneurs de 17 packages sur CRAN dont `tcltk2`, `mlearning`, `pastecs`, `zooimage`, `SciViews`, `svDialogs`, ...)
 
 ![](figures/mesocosme.jpg)
-
-
-### Qui sommes-nous?
-
-- Développeurs en R (mainteneurs de 17 packages sur CRAN dont `tcltk2`, `mlearning`, `pastecs`, `zooimage`, `SciViews`, `svDialogs`, etc.)
-
-- Recherche sur l'évolution et la maintenance logicielles.
-
-![](figures/study-function-clones-in-CRAN.png)
 
 
 ### Qui sommes-nous?
@@ -43,6 +35,7 @@ En observant nos étudiants, nous en déduisons les aspects les plus difficiles 
 Deux exemples seront détaillés ici.
 \end{center}
 
+![](figures/caution_wet_floor.jpg)
 
 ### Courbe d'apprentissage de R
 
@@ -74,16 +67,10 @@ Deux exemples seront détaillés ici.
 \includegraphics[width=.3\linewidth]{figures/hex_chart.png}
 \end{center}
 
-### L'écosystème R propose un vaste choix de fonctions
-
-Trois philosophies différentes principales (cf. Amélia McNamara) : **dollar** & **formule** (R base) _versus_ **Tidyverse**
-
-![](figures/syntax.pdf)
-
 
 ### Graphiques sous R
 
-- Trois moteurs graphiques principaux **base R ("dollar" et formule)**, **lattice (formule)** & **ggplot2 (tidyverse)**
+- Trois moteurs graphiques principaux **base R**, **lattice** & **ggplot2 (tidyverse)**
 
 - Rendu différent, syntaxe différente, incompatibilités
 
@@ -115,7 +102,7 @@ _Voyons ensemble avec un exemple très simple d'une analyse par régression lin�
 
 ### Analyse de la masse de squelette d'oursins
 
-Jeu de données `urchin_bio` dans le package `data` qui propose aussi une fonction `read()` pour charger et **"enrichir"** les jeux de données (label et unité des variables dans différentes langues) :
+Jeu de données `urchin_bio` dans le package `data` chargé avec sa fonction `read()` (jeu de données) **enrichi** de métadonnées (e.g., **label** et **unités** des variables dans différentes langues) :
 
 ```{r}
 #install.packages("devtools")
@@ -183,7 +170,7 @@ chart(data = urchin, aes(weight, skeleton)) +
 \vfill
 
 - Substitution facile à retenir
-- Libellés des axes et unités automatiques (si renseignés dans le jeu de données)
+- Labels des axes et unités automatiques (si renseignés dans le jeu de données)
 - Thème plus proche du "publication-ready"
 
 \endcol
@@ -216,32 +203,7 @@ _Comment simplifier vers un pattern unique?_
 \endcols
 
 
-### Utilisation de formules avec `ggplot2`
-
-\begincols
-\begincol{.64\textwidth}
-
-```{r fig.align="center", warning=FALSE}
-ggplot(data = urchin, f_aes(skeleton ~ weight)) +
-  geom_point()
-```
-
-\endcol
-\begincol{.32\textwidth}
-
-**Règle `chart` #2: formule `f_aes()` se substitue à `aes()`.**
-
-\vfill
-
-- Convergence vers un pattern identique graphe/modèle dans les cas simples :
-
-`<fun>(data = <df>, <formula>)`
-
-\endcol
-\endcols
-
-
-### Utilisation conjointe de formules et de `chart()`
+### Utilisation de formules avec `chart`
 
 \begincols
 \begincol{.64\textwidth}
@@ -254,11 +216,11 @@ chart(data = urchin, skeleton ~ weight) +
 \endcol
 \begincol{.32\textwidth}
 
-**`f_aes()` est implicite!**
+**Règle `chart` #2: une formule est utilisable à la place de `aes()`.**
 
 \vfill
 
-- Pattern réellement identique entre `lm()` et `chart()` plus facile pour le débutant :
+- Convergence vers un pattern identique graphe/modèle dans les cas simples :
 
 `<fun>(data = <df>, <formula>)`
 
@@ -291,21 +253,6 @@ chart$xyplot(data = urchin, skeleton ~ weight)
 \endcol
 \endcols
 
-### Arguments supplémentaires `aes` intégrables à la formule avec `%<par>=%`
-
-```{r fig.align="center", warning=FALSE}
-#chart$geom_point(data = urchin, skeleton ~ weight, col = origin)
-chart$geom_point(data = urchin, skeleton ~ weight %col=% origin)
-```
-
-
-### Facettes intégrables dans la formule avec `|` (= `lattice`)
-
-```{r fig.align="center", warning=FALSE}
-#chart$geom_point(data = urchin, skeleton ~ weight) +
-#  facet_wrap(~origin)
-chart$geom_point(data = urchin, skeleton ~ weight | origin)
-```
 
 ### Ajout de la droite de régression
 
@@ -344,6 +291,8 @@ _Comment combiner avec le graphe `ggplot2` précédent dans une figure composite
 
 ### Compatibilité des graphiques `chart` base/lattice/ggplot2 entre eux
 
+Le problème ne se pose plus avec `chart()` : tous les graphes sont compatibles entre eux pour l'assemblage en une figure composite. Démonstration :
+
 ```{r eval=FALSE}
 # ggplot2
 c1 <- chart$geom_point(data = urchin, skeleton ~ weight) +
@@ -381,7 +330,7 @@ ggarrange(c1, c2, c3, c4, labels = "AUTO")
 
 - Les graphiques `chart` peuvent tous être assemblés en une figure composite, qu'ils soient `ggplot2`, graphes de base ou `lattice` _(fini)_
 
-- Les formules "étendues" sont aussi utilisables avec `ggplot2` _(fini)_
+- Les formules sont aussi utilisables avec `ggplot2` en utilisant `chart()` _(fini)_
 
 - Les thèmes des 3 moteurs graphiques sont homogénéisés le plus possible avec `chart` _(encore perfectible)_
 
@@ -440,50 +389,7 @@ library(flow)
 ```
 
 
-### Création explicite d'un objet `flow` : permet d'inclure d'autres variables {.fragile}
-
-\begincols
-\begincol{.48\textwidth}
-
-**Tidyverse**
-
-```{r eval=FALSE}
-#
-na_rm <- TRUE
-urchin %>%
-  mutate(lgsk = log(skeleton)) %>%
-  summarise(mean = mean(lgsk,
-    na.rm = !!na_rm))
-```
-
-\endcol
-
-. . .
-
-\begincol{.48\textwidth}
-
-**flow**
-
-```{r eval=FALSE}
-flow(urchin,
-  na_rm = TRUE
-) %>_%
-  mutate(., lgsk = log(skeleton)) %>_%
-  summarise(., mean = mean(lgsk,
-    na.rm = na_rm_)) %>_% .
-```
-
-\endcol
-\endcols
-
-#### La variable `na_rm` est incluse dans l'objet `flow`
-
-- Elle ne **"pollue" pas l'environnement** où le pipeline est exécuté, contrairement à ce qui se passe à gauche dans la forme classique
-
-- Opérateur préfixé `!!` (tidyeval) de **tidyverse** est remplacé par l'"opérateur" `_` suffixé dans `flow`
-
-
-### Utilisation plus transparente des `quosure`s dans `flow` {.fragile}
+### Création d'un objet `flow` : permet d'inclure des variables dans le pipeline {.fragile}
 
 \begincols
 \begincol{.48\textwidth}
@@ -493,11 +399,10 @@ flow(urchin,
 ```{r eval=FALSE}
 #
 x <- quo(skeleton)
-na_rm <- TRUE
 urchin %>%
   mutate(lgsk = log(!!x)) %>%
   summarise(mean = mean(lgsk,
-    na.rm = !!na_rm))
+    na.rm = TRUE))
 ```
 
 \endcol
@@ -510,26 +415,28 @@ urchin %>%
 
 ```{r eval=FALSE}
 flow(urchin,
-  x_ = skeleton,
-  na_rm = TRUE
+  x_ = skeleton
 ) %>_%
   mutate(., lgsk = log(x_)) %>_%
   summarise(., mean = mean(lgsk,
-    na.rm = na_rm_)) %>_% .
+    na.rm = TRUE)) %>_% .
 ```
 
 \endcol
 \endcols
 
-#### Une variable `flow` suffixée de `_` crée **automatiquement** une `quosure`
+#### La variable `x_` est incluse dans l'objet `flow`
 
-- Le passage d'expressions via les `quosure`s devient transparent avec l'opérateur suffixé `_` dans `flow`
+- Elle ne **"pollue" pas l'environnement** où le pipeline est exécuté, contrairement à ce qui se passe à gauche dans la forme classique
+
+- Opérateur préfixé `!!` (tidyeval) de **tidyverse** est remplacé par l'"opérateur" `_` suffixé dans `flow`
+
+- Le passage d'expressions via les `quosure`s devient transparent avec l'"opérateur" suffixé `_` dans `flow`
 
 - la spécification de l'expression est largement simplifiée (pas besoin de `quo()` ou `enquo()`, objectif premier de l'utilisation de l'évaluation non standard !)
 
 
-
-### Version finale avec trois variables {.fragile}
+### Variable comme nom d'argument (cas plus difficile) {.fragile}
 
 \begincols
 \begincol{.48\textwidth}
@@ -541,11 +448,10 @@ flow(urchin,
 x <- quo(skeleton)
 y <- "lgsk"
 y_quo <- as.quosure(as.name(y))
-na_rm <- TRUE
 urchin %>%
   mutate(!!y := log(!!x)) %>%
   summarise(mean = mean(!!y_quo,
-    na.rm = !!na_rm))
+    na.rm = TRUE))
 ```
 
 \endcol
@@ -559,13 +465,12 @@ urchin %>%
 ```{r eval=FALSE}
 flow(urchin,
   x_ = skeleton,
-  y_ = lgsk,
+  y_ = lgsk
   
-  na_rm = TRUE
 ) %>_%
   mutate(., y_ = log(x_)) %>_%
   summarise(., mean = mean(y_,
-    na.rm = na_rm_)) %>_% .
+    na.rm =TRUE)) %>_% .
 ```
 
 \endcol
@@ -592,11 +497,10 @@ flow(urchin,
 x <- quo(skeleton)
 y <- "lgsk"
 y_quo <- as.quosure(as.name(y))
-na_rm <- TRUE
 foo <- . %>%
   mutate(!!y := log(!!x)) %>%
   summarise(mean = mean(!!y_quo,
-    na.rm = !!na_rm))
+    na.rm = TRUE))
 # Utilisation
 foo(urchin)
 ```
@@ -612,13 +516,12 @@ foo(urchin)
 ```{r eval=FALSE}
 foo <- flow_function(urchin,
   x_ = skeleton,
-  y_ = lgsk,
+  y_ = lgsk
   
-  na_rm = TRUE
 ) %>_%
   mutate(., y_ = log(x_)) %>_%
   summarise(., mean = mean(y_,
-    na.rm = na_rm_)) %>_% .
+    na.rm = TRUE)) %>_% .
 # Utilisation, autre variable
 foo(urchin, x_ = weight)
 ```
@@ -630,14 +533,14 @@ foo(urchin, x_ = weight)
 
 - `flow()` est juste remplacé par `flow_function()`
 
-- Passage à une fonction véritable **beaucoup plus facile et intuitive** à partir de `flow_function()` (conversion automatisée même possible)!
+- Passage à une fonction véritable **beaucoup plus facile et intuitive** à partir de `flow_function()` (conversion automatisée même possible) !
 
 
 ### A retenir...
 
 - Les objets `flow` contiennent tout ce qui est nécessaire au pipeline, y compris des variables satellites éventuelles
 
-- Le mécanisme "tidyeval" de tidyverse est beaucoup plus facile à implémenter et quasi-totalement transparent avec la convention `<var>_` de `flow`
+- Le mécanisme "tidyeval" de tidyverse est beaucoup plus facile à implémenter et quasi-totalement transparent avec la convention `<var>_` ("opérateur" suffixé `_`) de `flow`
 
 - Le passage d'un pipeline `flow()` avec variables satellites à une fonction réutilisable est immédiat en remplaçant par `flow_function()`
 
@@ -652,7 +555,8 @@ _En cours de finalisation et soumission à CRAN... les contributions sont les bi
 
 **Avez-vous des questions ?**
 
-Présentation et version plus détaillée sous forme de **R Notebook** disponible à https://github.com/SciViews/RencontresRRennes2018
+Présentation et version plus détaillée sous forme de tutorial R Notebook disponibles à 
 
+https://github.com/SciViews/RencontresRRennes2018
 
-
+![](figures/if_stat_programs_were_cars.jpg)
