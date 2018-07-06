@@ -1,5 +1,5 @@
 ---
-title: "Rencontres R - Rennes 2018 - `chart` et `flow` mini-tutorial"
+title: "Rencontres R - Rennes 2018 - `chart` et `flow` tutoriel"
 output: html_notebook
 ---
 
@@ -8,7 +8,7 @@ Version commentée et augmentée de RRennes2018_presentation.Rmd.
 
 ## Installation
 
-La versions en développement sur Github de ces fonctions est nécessaire :
+Installer la versions en développement sur Github des packages discutés ici est nécessaire au préalable :
 
 ```{r}
 #install.packages("devtools")
@@ -177,8 +177,8 @@ chart$geom_point(data = urchin, skeleton ~ weight) +
 
 ```{r}
 par(mfrow = c(1L, 2L))
-plot(urchin_lm, which = 1L)
-plot(urchin_lm, which = 2L)
+plot(lmod, which = 1L)
+plot(lmod, which = 2L)
 ```
 
 Mais si il veut reprendre le graphe `ggplot2` et l'associer à ces deux graphiques dans une figure composite, ce n'est pas possible !
@@ -197,6 +197,18 @@ c4 <- chart$plot(lmod, which = 2L)
 
 ggarrange(c1, c2, c3, c4, labels = "AUTO")
 ```
+
+### A retenir...
+
+_Travail sur `chart` en cours_
+
+- Les graphiques `chart` peuvent tous être assemblés en une figure composite, qu'ils soient `ggplot2`, graphes de base ou `lattice` _(fini)_
+
+- Les formules sont aussi utilisables avec `ggplot2` en utilisant `chart()` _(fini)_
+
+- Les thèmes des 3 moteurs graphiques sont homogénéisés le plus possible avec `chart` _(encore perfectible)_
+
+- Si des attributs `label` et `units` existent, ils sont utilisés pour de meilleurs labels des axes _(reste à implémenter pour `lattice` et graphes de base)_
 
 
 ## Utilisation de `flow`
@@ -263,7 +275,7 @@ flow(urchin, na_rm = TRUE) %>_%
     na.rm = na_rm_)) %>_% .
 ```
 
-Les plus attentifs auront noté une autre différence. Au lieu de `!!na_rm` dans l'expression non standard dans `summarise()`, on a utilisé `na_rm_`. Donc, l'opérateur `!!` de "tidyeval" est remplacé par un **"opérateur" suffixé** `_` derrière la variable `na_rm`. Opérateur est entre guillement, car syntactiquement parlant, ce n'en est pas une, mais il se comportera comme tel. Son rôle est de :
+Les plus attentifs auront noté une autre différence. Au lieu de `!!na_rm` dans l'expression non standard dans `summarise()`, on a utilisé `na_rm_`. Donc, l'opérateur `!!` de "tidyeval" est remplacé par un **"opérateur" suffixé** `_` derrière la variable `na_rm`. Opérateur est entre guillement, car syntactiquement parlant, ce n'en est pas un, mais il se comportera comme tel. Son rôle est de :
 
 1) extraire l'objet associé au nom `na_rm` depuis l'objet `flow`, et
 
@@ -283,7 +295,7 @@ urchin %>%
     na.rm = !!na_rm))
 ```
 
-Par rapport au cas précédent, nous devons créer explicitement une `quosure`, à l'aide de `quo()` ou `enquo()`. Pour le reste, le travail est le même.
+Par rapport au cas précédent, nous devons créer explicitement une `quosure`, à l'aide de `quo()` (ou `enquo()` dans une fonction). Pour le reste, le travail est le même.
 
 
 #### Variable avec `quosure` dans `flow`
@@ -297,33 +309,97 @@ flow(urchin,
     na.rm = na_rm_)) %>_% .
 ```
 
-Dans `flow`, l'opérateur suffixe `_` est utilisable également à l'assignation pour indiquer qu'on veut utiliser une expression à évaluer de manière non standard. Dans ce cas, `flow` créera la `quosure` de manière totalement transparente et fera le `unquote`ing dans l'expression non standard fournie à `mutate()`.
+Dans `flow`, l'opérateur suffixé `_` est utilisable également à l'assignation pour indiquer qu'on veut utiliser une expression à évaluer de manière non standard. Dans ce cas, `flow` créera la `quosure` de manière totalement transparente et fera le `unquote`ing dans l'expression non standard fournie à `mutate()`.
 
 
+### Variable comme nom et comme valeur à deux endroits du pipeline
+
+Dans notre petit pipeline simple d'exemple, nous pouvons être amené également à vouloir changer la variable crée dans `mutate()`: `lgsk`. Cette variable réapparait également sous une autre forme dans l'instruction suivante. En "tidyeval", cela oblige à travailler avec deux versions de la variable : une chaine de caractères dans `y`, et sa version `quosure` dans `y_quo` :
+
+```{r}
+x <- quo(skeleton)
+y <- "log_skel"
+y_quo <- as.quosure(as.name(y))
+na_rm <- TRUE
+urchin %>%
+  mutate(!!y := log(!!x)) %>%
+  summarise(mean = mean(!!y_quo,
+    na.rm = !!na_rm))
+```
+
+Ce n'est pas tout ! Il n'est pas permit par la syntaxe R d'utiliser l'opérateur `!!` devant le nom d'un argument dans l'appel d'une fonction. L'astuce choisie dans tidyverse consiste à remplacer le signe `=` par l'opérateur `:=` qui rend cette syntaxe correcte.
+
+
+#### Variable comme nom et comme valeur dans `flow`
 
 ```{r}
 flow(urchin,
   x_ = skeleton,
   y_ = log_skel,
   na_rm = TRUE) %>_%
-  
   mutate(., y_ = log(x_)) %>_%
   summarise(., mean = mean(y_,
     na.rm = na_rm_)) %>_% .
 ```
 
-L'équivalent en tidyverse pur donne (notez qu'il faut deux variables pour le nom `y_name` sous forme de chaine de caractères, puis l'appel de la nouvelle variable, `y` sous forme de `quosure`):
+Ici, tout est transparent, mis-à-part l'"opérateur" sufixé `_` que nous continuons à utiliser avec `y`. Pas besoin de deux variables, pas besoin de transformer `=` par `:=` !
+
+
+### Séquence fonctionnelle depuis un pipeline
+
+L'étape ultime est de tranformer notre pipeline à usage unique en une fonction réutilisable. Dans `tidyverse`, il suffit de remplacer le point de départ de notre pipeline (`urchin` dans notre exemple) par un point (`.`), et d'assigner le pipeline à un nom de vairiable pour la fonction (`foo`) :
 
 ```{r}
-
 x <- quo(skeleton)
-y_name <- "log_skel"
-y <- as.quosure(as.name(y_name))
+y <- "log_skel"
+y_quo <- as.quosure(as.name(y))
 na_rm <- TRUE
-urchin %>%
-  mutate(!!y_name := log(!!x)) %>%
-  summarise(mean = mean(!!y,
+foo <- . %>%
+  mutate(!!y := log(!!x)) %>%
+  summarise(mean = mean(!!y_quo,
     na.rm = !!na_rm))
 ```
 
+A ce stade, on peut utiliser cette séquence fonctionnelle comme une fonction à un argument : le jeu de données à traiter :
 
+```{r}
+foo(urchin)
+```
+
+Par contre, pour changer la variable à traiter, on doit manipuler les variables satellites que nous avons créées précédemment en dehors de l'appel de la fonction `foo()` :
+
+```{r}
+x <- quo(weight)
+foo(urchin)
+```
+
+Pas terribe du tout, évidemment. La solution est d'encapsuler tout cela dans une fonction qui admettra le jeu de données et les différentes variables comme arguments. D'où, une complexité encore plus grande.
+
+#### Séquences fonctionnelles avec `flow`
+
+L'objet `flow` ayant encapsulé déjà les différentes variables satelites, une grosse partie du travail est déjà préparé. Il nous suffit de créer une fonction qui pourra générer l'objet `flow`. Pour ce faire, on remplace `flow() par `function()`, le premier argument par `.` et on insère `enflow(.)` en tout début de pipeline :
+
+```{r eval=FALSE}
+foo <- function(., x_ = skeleton, y_ = log_skel, na_rm = TRUE)
+  enflow(.) %>_%
+  mutate(., y_ = log(x_)) %>_%
+  summarise(., mean = mean(y_,
+    na.rm = na_rm_)) %>_% .
+
+foo(urchin)
+
+foo(urchin, x_ = weight)
+```
+
+
+### A retenir...
+
+- Les objets `flow` contiennent tout ce qui est nécessaire au pipeline, y compris des variables satellites éventuelles
+
+- Le mécanisme "tidyeval" de tidyverse est beaucoup plus facile à implémenter et quasi-totalement transparent avec la convention `<var>_` ("opérateur" suffixé `_`) de `flow`
+
+- Le passage d'un pipeline `flow()` avec variables satellites à une fonction réutilisable se fait de manière explicite en utilisant `function()` et en commençant le pipeline par `enflow()` à l'intérieur de cette function
+
+- La transition pipeline tidyverse à usage unique vers la fonction réutilisable est graduelle et bien plus facile avec `flow`
+
+**Un useR devient un developeR en douceuR !**

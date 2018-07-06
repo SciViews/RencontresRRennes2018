@@ -486,8 +486,6 @@ flow(urchin,
 
 ### Fonction réutilisable depuis un pipeline ("séquence fonctionnelle") {.fragile}
 
-\alert{Travail en cours...}
-
 \begincols
 \begincol{.48\textwidth}
 
@@ -515,11 +513,11 @@ foo(urchin)
 **flow**
 
 ```{r eval=FALSE}
-foo <- flow_function(urchin,
+foo <- function(.,
   x_ = skeleton,
   y_ = lgsk
   
-) %>_%
+) enflow(.) %>_%
   mutate(., y_ = log(x_)) %>_%
   summarise(., mean = mean(y_,
     na.rm = TRUE)) %>_% .
@@ -532,9 +530,9 @@ foo(urchin, x_ = weight)
 
 #### Seul `flow` permet d'inclure d'autres variables dans la séquence fonctionnelle `foo`
 
-- `flow()` est juste remplacé par `flow_function()`
+- La fonction est créée de manière explicite avec `function()`
 
-- Passage à une fonction véritable **beaucoup plus facile et intuitif** à partir de `flow_function()` (conversion automatisée même possible) !
+- Le pipeline commence par `enflow()`
 
 
 ### A retenir...
@@ -543,7 +541,7 @@ foo(urchin, x_ = weight)
 
 - Le mécanisme "tidyeval" de tidyverse est beaucoup plus facile à implémenter et quasi-totalement transparent avec la convention `<var>_` ("opérateur" suffixé `_`) de `flow`
 
-- Le passage d'un pipeline `flow()` avec variables satellites à une fonction réutilisable est immédiat en remplaçant par `flow_function()`
+- Le passage d'un pipeline `flow()` avec variables satellites à une fonction réutilisable se fait de manière explicite en utilisant `function()` et `enflow()`
 
 - La transition pipeline tidyverse à usage unique vers la fonction réutilisable est graduelle et bien plus facile avec `flow`
 
@@ -554,10 +552,11 @@ _En cours de finalisation et soumission à CRAN... les contributions sont les bi
 
 ### Merci
 
-**Avez-vous des questions ?**
-
 Présentation et version plus détaillée sous forme de tutorial R Notebook disponibles à 
 
 https://github.com/SciViews/RencontresRRennes2018
 
-![](figures/if_stat_programs_were_cars.jpg)
+
+**Avez-vous des questions ?**
+
+![](figures/any-question.png)
